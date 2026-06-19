@@ -1,5 +1,12 @@
+"""
+BATERÍA 3 - Ejercicio 1: Lista de Reproducción Musical
+Implementación de una Lista Doblemente Enlazada para gestionar
+una playlist con navegación, búsqueda e información estadística.
+"""
+
 class NodoCancion:
     """Representa un nodo de la lista doblemente enlazada (una canción)."""
+
     def __init__(self, id_cancion, titulo, artista, duracion, genero):
         self.id = id_cancion
         self.titulo = titulo
@@ -17,16 +24,29 @@ class NodoCancion:
 
 class Playlist:
     """Gestiona la lista doblemente enlazada y los controles de reproducción."""
+
     def __init__(self):
         self.cabeza = None
         self.cola = None
         self.cancion_actual = None
+        self.siguiente_id = 1  # Contador interno para generar IDs automáticamente
 
+    # =========================================================================
+    # 1. GESTIÓN DE CANCIONES
+    # =========================================================================
 
-    def agregar_cancion(self, id_cancion, titulo, artista, duracion, genero):
-        """Agrega una nueva canción al final de la playlist."""
+    def agregar_cancion(self, titulo, artista, duracion, genero):
+        """Agrega una nueva canción al final de la playlist.
+
+        El ID se genera automáticamente, el usuario no lo proporciona.
+        """
+        if not isinstance(duracion, int) or duracion <= 0:
+            print("❌ Error: la duración debe ser un entero positivo (en segundos).")
+            return
+
+        id_cancion = self.siguiente_id
         nuevo_nodo = NodoCancion(id_cancion, titulo, artista, duracion, genero)
-        
+
         if self.cabeza is None:
             # Si la lista está vacía, el nuevo nodo es todo
             self.cabeza = nuevo_nodo
@@ -37,7 +57,9 @@ class Playlist:
             self.cola.siguiente = nuevo_nodo
             nuevo_nodo.anterior = self.cola
             self.cola = nuevo_nodo
-        print(f"🎵 Añadida con éxito: '{titulo}'")
+
+        self.siguiente_id += 1
+        print(f"🎵 Añadida con éxito (ID asignado: {id_cancion}): '{titulo}'")
 
     def eliminar_por_posicion(self, posicion):
         """Elimina una canción por su número de posición (1-based index)."""
@@ -52,7 +74,7 @@ class Playlist:
 
         nodo_actual = self.cabeza
         contador = 1
-        
+
         # Avanzar hasta el nodo en la posición deseada
         while contador < posicion:
             nodo_actual = nodo_actual.siguiente
@@ -109,7 +131,9 @@ class Playlist:
         if not encontrado:
             print("   No se encontraron canciones registradas de este artista.")
 
+    # =========================================================================
     # 2. REPRODUCCIÓN
+    # =========================================================================
 
     def reproducir_actual(self):
         """Muestra la canción seleccionada actualmente."""
@@ -120,7 +144,9 @@ class Playlist:
 
     def siguiente_cancion(self):
         """Avanza a la canción de la derecha (siguiente)."""
-        if self.cancion_actual and self.cancion_actual.siguiente:
+        if self.cancion_actual is None:
+            print("\n⚠️ La playlist está vacía.")
+        elif self.cancion_actual.siguiente:
             self.cancion_actual = self.cancion_actual.siguiente
             self.reproducir_actual()
         else:
@@ -128,7 +154,9 @@ class Playlist:
 
     def anterior_cancion(self):
         """Retrocede a la canción de la izquierda (anterior)."""
-        if self.cancion_actual and self.cancion_actual.anterior:
+        if self.cancion_actual is None:
+            print("\n⚠️ La playlist está vacía.")
+        elif self.cancion_actual.anterior:
             self.cancion_actual = self.cancion_actual.anterior
             self.reproducir_actual()
         else:
@@ -158,13 +186,13 @@ class Playlist:
         if posicion < 1 or posicion > total:
             print(f"❌ Posición {posicion} fuera de rango.")
             return
-        
+
         actual = self.cabeza
         contador = 1
         while contador < posicion:
             actual = actual.siguiente
             contador += 1
-        
+
         self.cancion_actual = actual
         print(f"\n🔄 Cambiado a posición {posicion}:")
         self.reproducir_actual()
@@ -187,6 +215,7 @@ class Playlist:
             indicador = "👉" if actual == self.cancion_actual else "  "
             print(f"{indicador} [{posicion}] {actual}")
             actual = actual.siguiente
+            posicion += 1
         print("=====================================================")
 
     def contar_canciones(self):
@@ -205,11 +234,11 @@ class Playlist:
         while actual:
             total_segundos += actual.duracion
             actual = actual.siguiente
-        
+
         horas = total_segundos // 3600
         minutos = (total_segundos % 3600) // 60
         segundos = total_segundos % 60
-        
+
         print(f"\n⏱️ Duración Total: {horas}h {minutos}m {segundos}s ({total_segundos} segundos)")
         return total_segundos
 
@@ -223,7 +252,7 @@ class Playlist:
                 print(f"   - '{actual.titulo}' de {actual.artista}")
                 encontrado = True
             actual = actual.siguiente
-        if not encontrar:
+        if not encontrado:
             print("   No hay canciones asociadas a este género.")
 
     def cancion_mas_larga_y_corta(self):
@@ -248,42 +277,118 @@ class Playlist:
 
 
 # =========================================================================
-# PRUEBAS DEL SISTEMA
+# MENÚ INTERACTIVO
 # =========================================================================
-if __name__ == "__main__":
-    # Inicialización
+
+def pedir_entero(mensaje):
+    """Solicita un entero al usuario validando el formato."""
+    while True:
+        valor = input(mensaje).strip()
+        try:
+            return int(valor)
+        except ValueError:
+            print("❌ Por favor ingresa un número entero válido.")
+
+
+def menu():
     reproductor = Playlist()
 
-    # 1. Pruebas de Inserción (Gestión)
-    print("--- 1. Cargando Canciones ---")
-    reproductor.agregar_cancion(1, "Bohemian Rhapsody", "Queen", 355, "Rock")
-    reproductor.agregar_cancion(2, "Blinding Lights", "The Weeknd", 200, "Pop")
-    reproductor.agregar_cancion(3, "Hotel California", "Eagles", 390, "Rock")
-    reproductor.agregar_cancion(4, "Save Your Tears", "The Weeknd", 215, "Pop")
+    opciones = """
+==================== REPRODUCTOR DE MÚSICA ====================
+ 1. Agregar canción
+ 2. Eliminar canción por posición
+ 3. Buscar canción por título
+ 4. Buscar canciones por artista
+ 5. Reproducir canción actual
+ 6. Siguiente canción
+ 7. Canción anterior
+ 8. Ir a la primera canción
+ 9. Ir a la última canción
+10. Seleccionar canción por posición
+11. Mostrar playlist completa
+12. Contar canciones
+13. Calcular duración total
+14. Mostrar canciones por género
+15. Canción más larga y más corta
+16. Cargar canciones de ejemplo
+ 0. Salir
+=================================================================
+"""
 
-    # 2. Pruebas de Despliegue de Información
-    reproductor.mostrar_playlist()
-    print(f"\n🔢 Cantidad de temas actuales: {reproductor.contar_canciones()}")
-    reproductor.calcular_duracion_total()
-    reproductor.cancion_mas_larga_y_corta()
+    while True:
+        print(opciones)
+        opcion = input("Elige una opción: ").strip()
 
-    # 3. Pruebas de Controles de Reproducción
-    reproductor.reproducir_actual()  # Primera por defecto
-    reproductor.siguiente_cancion()  # Avanza a Blinding Lights
-    reproductor.siguiente_cancion()  # Avanza a Hotel California
-    reproductor.anterior_cancion()   # Retrocede a Blinding Lights
-    
-    reproductor.ir_a_ultima()        # Salta a la última
-    reproductor.ir_a_primera()       # Vuelve al inicio
+        if opcion == "1":
+            titulo = input("Título: ").strip()
+            artista = input("Artista: ").strip()
+            duracion = pedir_entero("Duración (segundos): ")
+            genero = input("Género: ").strip()
+            reproductor.agregar_cancion(titulo, artista, duracion, genero)
 
-    reproductor.seleccionar_por_posicion(3) # Selecciona posición 3 (Hotel California)
+        elif opcion == "2":
+            pos = pedir_entero("Posición a eliminar: ")
+            reproductor.eliminar_por_posicion(pos)
 
-    # 4. Pruebas de Búsqueda y Filtros
-    reproductor.buscar_por_titulo("Bohemian Rhapsody")
-    reproductor.buscar_por_artista("The Weeknd")
-    reproductor.mostrar_por_genero("Pop")
+        elif opcion == "3":
+            titulo = input("Título a buscar: ").strip()
+            reproductor.buscar_por_titulo(titulo)
 
-    # 5. Pruebas de Eliminación
-    print("\n--- 2. Pruebas de Modificación ---")
-    reproductor.eliminar_por_posicion(2) # Eliminamos Blinding Lights
-    reproductor.mostrar_playlist()       # Visualizar reajuste de posiciones e indicadores
+        elif opcion == "4":
+            artista = input("Artista a buscar: ").strip()
+            reproductor.buscar_por_artista(artista)
+
+        elif opcion == "5":
+            reproductor.reproducir_actual()
+
+        elif opcion == "6":
+            reproductor.siguiente_cancion()
+
+        elif opcion == "7":
+            reproductor.anterior_cancion()
+
+        elif opcion == "8":
+            reproductor.ir_a_primera()
+
+        elif opcion == "9":
+            reproductor.ir_a_ultima()
+
+        elif opcion == "10":
+            pos = pedir_entero("Posición a seleccionar: ")
+            reproductor.seleccionar_por_posicion(pos)
+
+        elif opcion == "11":
+            reproductor.mostrar_playlist()
+
+        elif opcion == "12":
+            print(f"\n🔢 Cantidad de temas actuales: {reproductor.contar_canciones()}")
+
+        elif opcion == "13":
+            reproductor.calcular_duracion_total()
+
+        elif opcion == "14":
+            genero = input("Género a filtrar: ").strip()
+            reproductor.mostrar_por_genero(genero)
+
+        elif opcion == "15":
+            reproductor.cancion_mas_larga_y_corta()
+
+        elif opcion == "16":
+            reproductor.agregar_cancion("Bohemian Rhapsody", "Queen", 355, "Rock")
+            reproductor.agregar_cancion("Blinding Lights", "The Weeknd", 200, "Pop")
+            reproductor.agregar_cancion("Hotel California", "Eagles", 390, "Rock")
+            reproductor.agregar_cancion("Save Your Tears", "The Weeknd", 215, "Pop")
+            print("✅ Canciones de ejemplo cargadas.")
+
+        elif opcion == "0":
+            print("👋 ¡Hasta luego!")
+            break
+
+        else:
+            print("❌ Opción inválida, intenta de nuevo.")
+
+
+if __name__ == "__main__":
+    print("\n\n¿Deseas usar el menú interactivo? (s/n)")
+    if input().strip().lower() == "s":
+        menu()
